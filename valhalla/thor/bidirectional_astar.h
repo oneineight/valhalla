@@ -121,6 +121,9 @@ protected:
   EdgeStatus edgestatus_forward_;
   EdgeStatus edgestatus_reverse_;
 
+  float fwd_curr_sortcost_;
+  float rev_curr_sortcost_;
+
   // Best candidate connection and threshold to extend search.
   float cost_threshold_;
   uint32_t iterations_threshold_;

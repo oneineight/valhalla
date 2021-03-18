@@ -48,6 +48,8 @@ namespace thor {
 // Default constructor
 BidirectionalAStar::BidirectionalAStar(uint32_t max_reserved_labels_count)
     : PathAlgorithm(), max_reserved_labels_count_(max_reserved_labels_count) {
+  fwd_curr_sortcost_ = 0.f;
+  rev_curr_sortcost_ = 0.f;
   cost_threshold_ = 0;
   iterations_threshold_ = 0;
   desired_paths_count_ = 1;
@@ -118,6 +120,9 @@ void BidirectionalAStar::Init(const PointLL& origll, const PointLL& destll) {
   // Initialize best connections as having none
   best_connections_ = {};
 
+  fwd_curr_sortcost_ = 0.f;
+  rev_curr_sortcost_ = 0.f;
+
   // Set the cost threshold to the maximum float value. Once the initial connection is found
   // the threshold is set.
   cost_threshold_ = std::numeric_limits<float>::max();
@@ -142,6 +147,14 @@ bool BidirectionalAStar::ExpandForward(GraphReader& graphreader,
     return false;
   }
   const NodeInfo* nodeinfo = tile->node(node);
+
+  if (cost_threshold_ != std::numeric_limits<float>::max() && pred.predecessor() != kInvalidLabel) {
+    const float route_lower_bound_cost = edgelabels_forward_[pred.predecessor()].cost().cost +
+        pred.transition_cost().cost + rev_curr_sortcost_ - astarheuristic_reverse_.Get(tile->get_node_ll(node));
+    if (route_lower_bound_cost > cost_threshold_) {
+      return false;
+    }
+  }
 
   // Keep track of superseded edges
   uint32_t shortcuts = 0;
@@ -356,6 +369,14 @@ bool BidirectionalAStar::ExpandReverse(GraphReader& graphreader,
     return false;
   }
   const NodeInfo* nodeinfo = tile->node(node);
+
+  if (cost_threshold_ != std::numeric_limits<float>::max() && pred.predecessor() != kInvalidLabel) {
+    const float route_lower_bound_cost = edgelabels_reverse_[pred.predecessor()].cost().cost +
+        pred.transition_cost().cost + fwd_curr_sortcost_ - astarheuristic_forward_.Get(tile->get_node_ll(node));
+    if (route_lower_bound_cost > cost_threshold_) {
+      return false;
+    }
+  }
 
   // Keep track of superseded edges
   uint32_t shortcuts = 0;
@@ -647,6 +668,8 @@ BidirectionalAStar::GetBestPath(valhalla::Location& origin,
           return FormPath(graphreader, options, origin, destination, forward_time_info, invariant);
         }
 
+        fwd_curr_sortcost_ = fwd_pred.sortcost();
+
         // Check if the edge on the forward search connects to a settled edge on the
         // reverse search tree. Do not expand further past this edge since it will just
         // result in other connections.
@@ -679,6 +702,8 @@ BidirectionalAStar::GetBestPath(valhalla::Location& origin,
         if (rev_pred.sortcost() > cost_threshold_) {
           return FormPath(graphreader, options, origin, destination, forward_time_info, invariant);
         }
+
+        rev_curr_sortcost_ = rev_pred.sortcost();
 
         // Check if the edge on the reverse search connects to a settled edge on the
         // forward search tree. Do not expand further past this edge since it will just
@@ -790,20 +815,20 @@ bool BidirectionalAStar::SetForwardConnection(GraphReader& graphreader, const BD
   // Keep the best ones at the front all others to the back
   best_connections_.emplace_back(CandidateConnection{pred.edgeid(), oppedge, c});
 
-  if (c < best_connections_.front().cost)
-    std::swap(best_connections_.front(), best_connections_.back());
-
   // Set thresholds to extend search
-  if (cost_threshold_ == std::numeric_limits<float>::max()) {
-    float sortcost = std::max(pred.sortcost() + cost_diff_, opp_pred.sortcost());
+  if (cost_threshold_ == std::numeric_limits<float>::max() || c < best_connections_.front().cost) {
+    //float sortcost = std::max(pred.sortcost() + cost_diff_, opp_pred.sortcost());
     if (desired_paths_count_ == 1) {
-      cost_threshold_ = sortcost + kThresholdDelta;
+      cost_threshold_ = c + kThresholdDelta;
     } else {
-      cost_threshold_ = sortcost + std::max(kAlternativeCostExtend * sortcost, kThresholdDelta);
+      cost_threshold_ = c + std::max(kAlternativeCostExtend * c, kThresholdDelta);
       iterations_threshold_ =
           edgelabels_forward_.size() + edgelabels_reverse_.size() + kAlternativeIterationsDelta;
     }
   }
+
+  if (c < best_connections_.front().cost)
+    std::swap(best_connections_.front(), best_connections_.back());
 
   // setting this edge as connected
   if (expansion_callback_) {
@@ -851,20 +876,20 @@ bool BidirectionalAStar::SetReverseConnection(GraphReader& graphreader, const BD
   // Keep the best ones at the front all others to the back
   best_connections_.emplace_back(CandidateConnection{fwd_edge_id, rev_pred.edgeid(), c});
 
-  if (c < best_connections_.front().cost)
-    std::swap(best_connections_.front(), best_connections_.back());
-
   // Set thresholds to extend search
-  if (cost_threshold_ == std::numeric_limits<float>::max()) {
-    float sortcost = std::max(rev_pred.sortcost(), fwd_pred.sortcost() + cost_diff_);
+  if (cost_threshold_ == std::numeric_limits<float>::max() || c < best_connections_.front().cost) {
+//    float sortcost = std::max(rev_pred.sortcost(), fwd_pred.sortcost() + cost_diff_);
     if (desired_paths_count_ == 1) {
-      cost_threshold_ = sortcost + kThresholdDelta;
+      cost_threshold_ = c + kThresholdDelta;
     } else {
-      cost_threshold_ = sortcost + std::max(kAlternativeCostExtend * sortcost, kThresholdDelta);
+      cost_threshold_ = c + std::max(kAlternativeCostExtend * c, kThresholdDelta);
       iterations_threshold_ =
           edgelabels_forward_.size() + edgelabels_reverse_.size() + kAlternativeIterationsDelta;
     }
   }
+
+  if (c < best_connections_.front().cost)
+    std::swap(best_connections_.front(), best_connections_.back());
 
   // setting this edge as connected, sending the opposing because this is the reverse tree
   if (expansion_callback_) {
