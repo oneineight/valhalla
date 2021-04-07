@@ -142,6 +142,7 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
                                          sequence<OSMWay>& ways,
                                          sequence<OSMWayNode>& way_nodes,
                                          std::queue<LinkTreeNode*>& leaves,
+                                         bool downgrade_links,
                                          bool infer_turn_channels) {
   // Get the classification at the root node.
   std::pair<uint32_t, uint32_t> counts = std::make_pair(0, 0);
@@ -149,7 +150,6 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
 
   // Work up from each leaf until the root is found or a branch occurs.
   // Add branches to expand to a list;
-  uint32_t rc = 0;
   std::vector<uint32_t> link_edge_indexes;
   while (!leaves.empty()) {
     // Clear the list of link edge indices from the prior leaf
@@ -164,6 +164,7 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
     bool has_fork = false;
     bool has_exit = current_node->has_exit;
     bool ends_have_non_link = current_node->non_link_count > 0;
+    uint32_t road_class = kAbsurdRoadClass;
 
     // Go upward in the tree until a branch is found or the root is reached
     while (current_node->parent != nullptr) {
@@ -178,7 +179,10 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
       // Get the link edge index from the parent to the current node
       for (uint32_t i = 0; i < parent->children.size(); ++i) {
         if (&parent->children[i] == current_node) {
-          link_edge_indexes.push_back(parent->link_edge_index[i]);
+          uint32_t edge_idx = parent->link_edge_index[i];
+          // Update current best road class
+          road_class = std::min<uint32_t>(road_class, (*edges[edge_idx]).attributes.importance);
+          link_edge_indexes.push_back(edge_idx);
           break;
         }
       }
@@ -202,12 +206,16 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
     }
     ends_have_non_link = ends_have_non_link && current_node->non_link_count > 0;
 
-    // Get the classification - max value of the exit classification and leaf
-    // classification. Make sure the classification is valid.
-    uint32_t rc = std::max(exit_classification, leaf_node->classification);
-    if (rc == kAbsurdRoadClass) {
-      LOG_ERROR("Trying to reclassify to invalid road class!");
-      continue;
+    if (downgrade_links) {
+      // Get the classification - max value of the exit classification and leaf
+      // classification. Make sure the classification is valid.
+      road_class = std::max(exit_classification, leaf_node->classification);
+      if (road_class == kAbsurdRoadClass) {
+        LOG_ERROR("Trying to reclassify to invalid road class!");
+        continue;
+      }
+      // Final road class shouldn't be worse than tertiary
+      road_class = std::min(road_class, static_cast<uint32_t>(RoadClass::kTertiary));
     }
 
     // Test if this link is a turn channel. Classification cannot be trunk or
@@ -215,7 +223,7 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
     // nodes along the path can have more than 2 links (fork). The end nodes
     // must have a non-link edge.
     bool turn_channel = false;
-    if (infer_turn_channels && (rc > static_cast<uint32_t>(RoadClass::kTrunk) && !has_fork &&
+    if (infer_turn_channels && (road_class > static_cast<uint32_t>(RoadClass::kTrunk) && !has_fork &&
                                 !has_exit && ends_have_non_link)) {
       turn_channel = IsTurnChannel(ways, edges, way_nodes, link_edge_indexes);
     }
@@ -224,12 +232,8 @@ std::pair<uint32_t, uint32_t> Reclassify(LinkTreeNode& root,
     for (auto idx : link_edge_indexes) {
       sequence<Edge>::iterator element = edges[idx];
       auto edge = *element;
-      if (rc > edge.attributes.importance) {
-        if (rc < static_cast<uint32_t>(RoadClass::kUnclassified))
-          edge.attributes.importance = rc;
-        else
-          edge.attributes.importance = static_cast<uint32_t>(RoadClass::kTertiary);
-
+      if (downgrade_links && road_class > edge.attributes.importance) {
+        edge.attributes.importance = road_class;
         counts.first++;
       }
       if (turn_channel) {
@@ -257,6 +261,7 @@ void ReclassifyLinks(const std::string& ways_file,
                      const std::string& nodes_file,
                      const std::string& edges_file,
                      const std::string& way_nodes_file,
+                     bool downgrade_links,
                      bool infer_turn_channels) {
   LOG_INFO("Reclassifying link graph edges...");
 
@@ -394,7 +399,8 @@ void ReclassifyLinks(const std::string& ways_file,
       }
 
       // Reclassify link edges within the link tree
-      auto counts = Reclassify(exit_node, edges, ways, way_nodes, leaves, infer_turn_channels);
+      auto counts =
+          Reclassify(exit_node, edges, ways, way_nodes, leaves, downgrade_links, infer_turn_channels);
       count += counts.first;
       tc_count += counts.second;
     }

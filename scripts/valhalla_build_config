@@ -39,7 +39,7 @@ config = {
     'import_bike_share_stations': False,
     'global_synchronized_cache': False,
     'max_concurrent_reader_users' : 1,
-    'reclassify_links': True,
+    'reclassify_links': False,
     'data_processing': {
       'infer_internal_intersections': True,
       'infer_turn_channels': True,

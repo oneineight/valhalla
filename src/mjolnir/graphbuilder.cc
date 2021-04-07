@@ -1135,12 +1135,13 @@ void GraphBuilder::Build(const boost::property_tree::ptree& pt,
   // Reclassify links (ramps). Cannot do this when building tiles since the
   // edge list needs to be modified
   DataQuality stats;
-  if (pt.get<bool>("mjolnir.reclassify_links", true)) {
-    ReclassifyLinks(ways_file, nodes_file, edges_file, way_nodes_file,
-                    pt.get<bool>("mjolnir.data_processing.infer_turn_channels", true));
-  } else {
-    LOG_WARN("Not reclassifying link graph edges");
-  }
+
+  bool downgrade_links = pt.get<bool>("mjolnir.reclassify_links", false);
+  bool infer_turn_channels = pt.get<bool>("mjolnir.data_processing.infer_turn_channels", true);
+
+  if (downgrade_links || infer_turn_channels)
+    ReclassifyLinks(ways_file, nodes_file, edges_file, way_nodes_file, downgrade_links,
+                    infer_turn_channels);
 
   // Reclassify ferry connection edges - use the highway classification cutoff
   baldr::RoadClass rc = baldr::RoadClass::kPrimary;
