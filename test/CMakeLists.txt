@@ -125,7 +125,7 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/test/data/utrecht_tiles/0/003/196.
       -s parsenodes -e parsenodes
       ${VALHALLA_SOURCE_DIR}/test/data/utrecht_netherlands.osm.pbf
   COMMAND ${CMAKE_BINARY_DIR}/valhalla_build_tiles
-      --inline-config '{"mjolnir":{"id_table_size":1000,"tile_dir":"test/data/utrecht_tiles","timezone":"test/data/tz.sqlite","admin":"${VALHALLA_SOURCE_DIR}/test/data/netherlands_admin.sqlite","hierarchy":true,"shortcuts":true,"concurrency":1,"logging":{"type":""}}}'
+      --inline-config '{"mjolnir":{"id_table_size":1000,"tile_dir":"test/data/utrecht_tiles","timezone":"test/data/tz.sqlite","admin":"${VALHALLA_SOURCE_DIR}/test/data/netherlands_admin.sqlite","hierarchy":true,"shortcuts":true,"concurrency":1,"logging":{"type":""},"reclassify_links":true}}'
       -s build -e cleanup
       ${VALHALLA_SOURCE_DIR}/test/data/utrecht_netherlands.osm.pbf
   COMMAND ${CMAKE_BINARY_DIR}/valhalla_add_predicted_traffic
