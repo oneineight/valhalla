@@ -1,6 +1,7 @@
 #ifndef VALHALLA_MJOLNIR_LINK_CLASSIFICATION_H_
 #define VALHALLA_MJOLNIR_LINK_CLASSIFICATION_H_
 
+#include <valhalla/mjolnir/osmdata.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -15,6 +16,14 @@ void ReclassifyLinks(const std::string& ways_file,
                      const std::string& nodes_file,
                      const std::string& edges_file,
                      const std::string& way_nodes_file,
+                     const OSMData& osmdata,
+                     bool infer_turn_channels);
+
+void ReclassifyLinks_V2(const std::string& ways_file,
+                     const std::string& nodes_file,
+                     const std::string& edges_file,
+                     const std::string& way_nodes_file,
+                     const OSMData& osmdata,
                      bool infer_turn_channels);
 } // namespace mjolnir
 } // namespace valhalla

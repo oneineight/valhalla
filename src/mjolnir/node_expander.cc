@@ -18,6 +18,7 @@ node_bundle collect_node_edges(const sequence<Node>::iterator& node_itr,
       auto edge = *edge_itr;
       // Set driveforward - this edge is traversed in forward direction
       edge.attributes.driveforward = edge.attributes.driveableforward;
+      edge.attributes.drivereverse = edge.attributes.driveablereverse;
       bundle.node_edges.emplace(std::make_pair(edge, node.start_of));
       bundle.node.link_edge_ = bundle.node.link_edge_ || edge.attributes.link;
       bundle.node.ferry_edge_ = bundle.node.ferry_edge_ || edge.attributes.driveable_ferry;
@@ -42,6 +43,7 @@ node_bundle collect_node_edges(const sequence<Node>::iterator& node_itr,
       auto edge = *edge_itr;
       // Set driveforward - this edge is traversed in reverse direction
       edge.attributes.driveforward = edge.attributes.driveablereverse;
+      edge.attributes.drivereverse = edge.attributes.driveableforward;
       bundle.node_edges.emplace(std::make_pair(edge, node.end_of));
       bundle.node.link_edge_ = bundle.node.link_edge_ || edge.attributes.link;
       bundle.node.ferry_edge_ = bundle.node.ferry_edge_ || edge.attributes.driveable_ferry;

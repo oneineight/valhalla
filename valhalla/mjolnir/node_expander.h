@@ -44,6 +44,7 @@ struct Edge {
     uint64_t has_names : 1;
     uint64_t driveforward : 1; // For sorting in collect_node_edges
                                //  - set based on source node
+    uint64_t drivereverse : 1;
     uint64_t shortlink : 1;    // true if this is a link edge and is
                                //   short enough it may be internal to
                                //   an intersection
@@ -53,7 +54,7 @@ struct Edge {
     uint64_t turn_channel : 1;  // Link edge should be a turn channel
     uint64_t way_begin : 1;     // True if first edge of way
     uint64_t way_end : 1;       // True if last edge of way
-    uint64_t spare : 30;
+    uint64_t spare : 29;
   };
   EdgeAttributes attributes;
 
