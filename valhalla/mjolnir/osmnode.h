@@ -44,7 +44,8 @@ struct OSMNode {
   uint32_t ferry_edge_ : 1;
   uint32_t flat_loop_ : 1; // A node which on a section of a way that is doubled back on itself
   uint32_t urban_ : 1;
-  uint32_t spare1_ : 5;
+  uint32_t spec_access_ : 1; // Was the access originally specified.
+  uint32_t spare1_ : 4;
 
   // Lat,lng of the node at fixed 7digit precision
   uint32_t lng7_;
@@ -350,6 +351,24 @@ struct OSMNode {
    */
   bool has_state_iso_index() const {
     return state_iso_index_ > 0;
+  }
+
+  /**
+   * Set the spec_access flag.
+   * @param  spec_access   Was the access originally specified? True if
+   *         any tags like "access", "auto", "truck", "foot", etc were specified.
+   */
+  void set_spec_access(const bool spec_access) {
+    spec_access_ = spec_access;
+  }
+
+  /**
+   * Get the spec_access flag
+   * @return  Returns true if any tags like "access", "auto", "truck", "foot", etc
+   *          were specified. False if not.
+   */
+  bool spec_access() const {
+    return spec_access_;
   }
 };
 

@@ -216,6 +216,20 @@ public:
   }
 
   /**
+   * Checks if access information was specified in the data.
+   * If the node didn't have any access specifications then probably it is restricted.
+   * @param   node  Pointer to node information.
+   * @return  Returns true if access was specified for the node and access is allowed.
+   */
+  // TODO: check inline
+  // TODO: check virtual
+  inline virtual bool InitiallyAllowed(const baldr::NodeInfo* node) const {
+    if (node->spec_access()) {
+      return Allowed(node);
+    } else return false;
+  }
+
+  /**
    * Used for determine the viability of a candidate edge as well as a conservative reachability
    * The notable difference to the full featured allowed method is this methods lack of info
    * about the currently tracked path (hence why its conservative)
@@ -987,7 +1001,7 @@ protected:
     // Cases with both time and penalty: country crossing, ferry, rail_ferry, gate, toll booth
     sif::Cost c;
     c += country_crossing_cost_ * (node->type() == baldr::NodeType::kBorderControl);
-    c += gate_cost_ * (node->type() == baldr::NodeType::kGate);
+    c += gate_cost_ * (node->type() == baldr::NodeType::kGate) * (!InitiallyAllowed(node));
     c += bike_share_cost_ * (node->type() == baldr::NodeType::kBikeShare);
     c += toll_booth_cost_ *
          (node->type() == baldr::NodeType::kTollBooth || (edge->toll() && !pred->toll()));

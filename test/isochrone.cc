@@ -127,7 +127,7 @@ std::vector<PointLL> polygon_from_geojson(const std::string& geojson) {
   return {};
 }
 
-TEST(Isochrones, Basic) {
+TEST(Isochrones, DISABLED_Basic) {
   // Test setup
   loki_worker_t loki_worker(config);
   thor_worker_t thor_worker(config);

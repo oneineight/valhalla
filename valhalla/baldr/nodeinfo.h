@@ -46,6 +46,7 @@ public:
   NodeInfo(const midgard::PointLL& tile_corner,
            const midgard::PointLL& ll,
            const uint32_t access,
+           const bool spec_access,
            const baldr::NodeType type,
            const bool traffic_signal);
 
@@ -244,6 +245,21 @@ public:
   void set_drive_on_right(const bool rsd);
 
   /**
+   * Was the access information was originally specified?
+   * @return  Returns true if access was specified.
+   */
+  bool spec_access() const {
+    return spec_access_;
+  }
+
+  /**
+   * Sets the flag indicating if the access information was specified.
+   * True if any tags like "access", "auto", "truck", "foot", etc were specified.
+   * @param  spec_access True if a access is set at the node.
+   */
+  void set_spec_access(const bool spec_access);
+
+  /**
    * Is a mode change allowed at this node? The access data tells which
    * modes are allowed at the node. Examples include transit stops, bike
    * share locations, and parking locations.
@@ -412,7 +428,8 @@ protected:
                                      // (up to kMaxLocalEdgeIndex+1)
   uint64_t drive_on_right_ : 1;      // Driving side. Right if true (false=left)
 
-  uint64_t spare2_ : 20;
+  uint64_t spec_access_ : 1;         // Was access specified?
+  uint64_t spare2_ : 19;
 
   // Headings of up to kMaxLocalEdgeIndex+1 local edges (rounded to nearest 2 degrees)
   // for all other levels. Connecting way Id (for transit level) while data build occurs.

@@ -947,6 +947,8 @@ public:
         n.set_type(NodeType::kSumpBuster);
       } else if (tag.first == "access_mask") {
         n.set_access(std::stoi(tag.second));
+      } else if (tag.first == "spec_access") {
+        n.set_spec_access(std::stoi(tag.second));
       }
 
       /* TODO: payment type.

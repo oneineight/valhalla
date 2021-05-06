@@ -38,7 +38,7 @@ struct graph_tile_builder {
                    float lat,
                    uint32_t edge_count,
                    uint32_t first_edge) {
-    nodes.push_back(vb::NodeInfo(base_ll, std::make_pair(lon, lat), vb::kAllAccess,
+    nodes.push_back(vb::NodeInfo(base_ll, std::make_pair(lon, lat), vb::kAllAccess, true,
                                  vb::NodeType::kStreetIntersection, false));
     nodes.back().set_edge_count(edge_count);
     nodes.back().set_edge_index(first_edge);

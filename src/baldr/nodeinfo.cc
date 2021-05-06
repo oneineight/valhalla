@@ -74,11 +74,13 @@ NodeInfo::NodeInfo() {
 NodeInfo::NodeInfo(const PointLL& tile_corner,
                    const PointLL& ll,
                    const uint32_t access,
+                   const bool spec_access,
                    const NodeType type,
                    const bool traffic_signal) {
   memset(this, 0, sizeof(NodeInfo));
   set_latlng(tile_corner, ll);
   set_access(access);
+  set_spec_access(spec_access);
   set_type(type);
   set_traffic_signal(traffic_signal);
 }
@@ -202,6 +204,11 @@ void NodeInfo::set_drive_on_right(const bool rsd) {
   drive_on_right_ = rsd;
 }
 
+// Sets the flag indicating if access was originally specified.
+void NodeInfo::set_spec_access(const bool spec_access) {
+  spec_access_ = spec_access;
+}
+
 // Sets the flag indicating a mode change is allowed at this node.
 // The access data tells which modes are allowed at the node. Examples
 // include transit stops, bike share locations, and parking locations.
@@ -247,6 +254,7 @@ json::MapPtr NodeInfo::json(const graph_tile_ptr& tile) const {
       {"lat", json::fp_t{latlng(tile->header()->base_ll()).second, 6}},
       {"edge_count", static_cast<uint64_t>(edge_count_)},
       {"access", access_json(access_)},
+      {"spec_access", static_cast<bool>(spec_access_)},
       {"intersection_type", to_string(static_cast<IntersectionType>(intersection_))},
       {"administrative", admin_json(tile->admininfo(admin_index_), timezone_)},
       {"density", static_cast<uint64_t>(density_)},
